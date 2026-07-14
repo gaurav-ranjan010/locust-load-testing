@@ -8,10 +8,17 @@ This repository is structured to keep **Locust load test scripts** and their **t
 locust-load-testing/
 ├── README.md
 ├── load_tests/
-│   └── sample_locustfile.py
-└── inputs/
-    └── sample/
-        └── users.csv
+│   ├── sample_locustfile.py
+│   ├── create_certificate_cc.py
+│   ├── enroll_certificate.py
+│   └── enroll_certificate_step_load.py
+├── inputs/
+│   └── sample/
+│       ├── users.csv
+│       ├── create_certificate_cc.json
+│       └── enroll_certificate.json
+└── reports/
+    └── (HTML reports saved here)
 ```
 
 ## Folder purpose
@@ -116,26 +123,58 @@ export LOCUST_SAMPLE_PATH=/api/health
 From the repository root, run:
 
 ```bash
-locust -f load_tests/sample_locustfile.py
+locust -f load_tests/sample_locustfile.py --web-port 10842
 ```
 
-After running the command, Locust starts a web UI locally by default.
+After running the command, Locust starts a web UI locally.
 
 Open the UI in your browser:
 
 ```text
-http://localhost:8089
+http://localhost:10842
 ```
+
+## Available load test scripts
+
+| Script | Endpoint | Description |
+|--------|----------|-------------|
+| `sample_locustfile.py` | `GET /health` | Sample health check test |
+| `create_certificate_cc.py` | `POST /services/v2/order/certificate/ssl_dv_rapidssl` | SSL certificate order test |
+| `enroll_certificate.py` | `POST /cert/v1/enroll` | Certificate enroll test with randomised `symcOrderId` |
+| `enroll_certificate_step_load.py` | `POST /cert/v1/enroll` | 1-hour step-load test (5→30 users, +5 per 10 min) |
 
 ## How to run with a target host
 
 If your test script does not define a host internally, provide it at runtime:
 
 ```bash
-locust -f load_tests/sample_locustfile.py --host http://localhost:8000
+locust -f load_tests/sample_locustfile.py --host http://localhost:8086 --web-port 10842
 ```
 
-Replace `http://localhost:8000` with the base URL of the application you want to test.
+Replace `http://localhost:8086` with the base URL of the application you want to test.
+
+## How to run headless with an HTML report
+
+To run without the web UI and automatically save an HTML report:
+
+```bash
+locust -f load_tests/enroll_certificate.py \
+  --host http://localhost:8086 \
+  --users 20 --spawn-rate 20 \
+  --run-time 60s \
+  --headless \
+  --html reports/my_report.html
+```
+
+## How to run the 1-hour step-load test
+
+```bash
+locust -f load_tests/enroll_certificate_step_load.py \
+  --host http://localhost:8086 \
+  --web-port 10842
+```
+
+Then open `http://localhost:10842` and click **Start**. Users and ramp-up are controlled automatically by the `HourlyStepLoadShape` class.
 
 ## How to start the test from Locust UI
 
